@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from collections import namedtuple
-import numpy as np
 Item = namedtuple("Item", ['index', 'value', 'weight'])
-
+Item_2 = namedtuple("Item", ['index', 'value', 'weight', 'value_on_weight'])
 def Traceback(arr, K, w):
     items = []
     j = len(w)
@@ -35,6 +34,23 @@ def create_table(v, w, K):
                     a[i][j] = a[i][j-1]
     return a
 
+
+def greedy_algo(items_2, K):
+    actual_weight = 0
+    taken = []
+    items_2 = sorted(items_2, key = lambda item: item.value_on_weight, reverse = True)  
+    i = 0
+    for i in range(len(items_2)):
+        if actual_weight <= K:
+            actual_weight += items_2[i].weight
+            taken.append(items_2[i].index)
+    return taken, actual_weight - items_2[i].weight
+
+
+
+
+
+
 def solve_it(input_data):
     # Modify this code to run your optimization algorithm
 
@@ -46,11 +62,13 @@ def solve_it(input_data):
     capacity = int(firstLine[1])
 
     items = []
-
+    items_2 = []
     for i in range(1, item_count+1):
         line = lines[i]
         parts = line.split()
         items.append(Item(i-1, int(parts[0]), int(parts[1])))
+        items_2.append(Item_2(i-1, int(parts[0]), int(parts[1]), int(parts[0])/int(parts[1]) ) ) 
+
 
     # a trivial algorithm for filling the knapsack
     # it takes items in-order until the knapsack is full
@@ -63,12 +81,16 @@ def solve_it(input_data):
     w = [item.weight for item in items]
     K = capacity
     #print(w)
-
-    table = create_table(v,w,K)
-    value = table[-1][-1]
-    taken_1 = Traceback(table, K, w)
-    for i in taken_1:
-        taken[i-1] = 1
+    if len(items)*K < 1e9:
+        table = create_table(v,w,K)
+        value = table[-1][-1]
+        taken_1 = Traceback(table, K, w)
+        for i in taken_1:
+            taken[i-1] = 1
+    else: 
+        taken_2, value= greedy_algo(items_2, K)
+        for i in taken_2:
+            taken[i-1] = 1
     #print(table)
     #for item in items:
     #    if weight + item.weight <= capacity:
