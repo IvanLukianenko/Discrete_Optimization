@@ -37,14 +37,17 @@ def create_table(v, w, K):
 
 def greedy_algo(items_2, K):
     actual_weight = 0
+    actual_value = 0
     taken = []
     items_2 = sorted(items_2, key = lambda item: item.value_on_weight, reverse = True)  
     i = 0
     for i in range(len(items_2)):
         if actual_weight <= K:
+            actual_value += items_2[i].value
             actual_weight += items_2[i].weight
             taken.append(items_2[i].index)
-    return taken, actual_weight - items_2[i].weight
+    del taken[-1]
+    return taken, actual_value - items_2[i].value
 
 
 
