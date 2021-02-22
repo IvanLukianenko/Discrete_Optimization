@@ -21,8 +21,8 @@ def LS(o_v, f_s, actl_v, tkn):
         return -1, tkn
     if (o_v < 0):
         return -1, tkn
-    a, b = LS(o_v, f_s - w[len(tkn)], actl_v + v[len(tkn)], tkn + [1])
-    a1, b1 = LS(o_v - v_w[len(tkn)], f_s, actl_v, tkn + [0])
+    a, b = LS(o_v, f_s - items_2_sorted[len(tkn)].weight, actl_v + items_2_sorted[len(tkn)].value, tkn + [items_2_sorted[len(tkn)].index])
+    a1, b1 = LS(o_v - items_2_sorted[len(tkn)].value, f_s, actl_v, tkn + [items_2_sorted[len(tkn)].index])
 
     if a > a1:
         global_max, tkn = a, b
@@ -67,13 +67,14 @@ def greedy_algo(items_2, K):
     taken = []
     items_2 = sorted(items_2, key = lambda item: item.value_on_weight, reverse = True)  
     i = 0
-    for i in range(len(items_2)):
-        if actual_weight <= K:
-            actual_value += items_2[i].value
-            actual_weight += items_2[i].weight
-            taken.append(items_2[i].index)
+    while(actual_weight <= K):
+        actual_value += items_2[i].value
+        actual_weight += items_2[i].weight
+        taken.append(items_2[i].index)
+        i += 1
+
     del taken[-1]
-    return taken, actual_value - items_2[-1].value
+    return taken, actual_value - items_2[i-1].value
     
 
 
@@ -96,7 +97,7 @@ def solve_it(input_data):
         line = lines[i]
         parts = line.split()
         items.append(Item(i-1, int(parts[0]), int(parts[1])))
-        items_2.append(Item_2(i-1, int(parts[0]), int(parts[1]), float(float(parts[0])/float(parts[1])) ) ) 
+        items_2.append(Item_2(i-1, int(parts[0]), int(parts[1]), (float(parts[0])/int(parts[1])) ) ) 
 
 
     # a trivial algorithm for filling the knapsack
@@ -116,6 +117,8 @@ def solve_it(input_data):
     global n
     n = item_count
     o_v = 0.0
+    global items_2_sorted
+    items_2_sorted = sorted(items_2, key = lambda item: item.value_on_weight, reverse = True)  
     res_weight = 0
     items_sor = sorted(items_2, key = lambda item : item.value_on_weight, reverse = True)
     for item in items_sor:
@@ -129,20 +132,20 @@ def solve_it(input_data):
             #print(item.value_on_weight)
             break
     #print(o_v)
-    #o_v = sum (v)
+    o_v = sum (v)
     value, taken = LS(o_v, K, 0, [])
 
     #print(w)
-    #if len(items)*K < 1e9:
-    #    table = create_table(v,w,K)
-    #    value = table[-1][-1]
-    #    taken_1 = Traceback(table, K, w)
-    #    for i in taken_1:
-    #        taken[i-1] = 1
-    #else: 
-    #    taken_2, value= greedy_algo(items_2, K)
-    #    for i in taken_2:
-    #        taken[i-1] = 1
+    '''if len(items)*K < 1e9:
+        table = create_table(v,w,K)
+        value = table[-1][-1]
+        taken_1 = Traceback(table, K, w)
+        for i in taken_1:
+            taken[i-1] = 1
+    else: 
+        taken_2, value= greedy_algo(items_2, K)
+        for i in taken_2:
+            taken[i-1] = 1'''
     #print(table)
     #for item in items:
     #    if weight + item.weight <= capacity:
