@@ -3,7 +3,7 @@ import math
 def length(point1, point2):
     return math.sqrt((point1.x - point2.x)**2 + (point1.y - point2.y)**2)
 
-def reverse_segment_if_2better(tour, i, j, points, tabu_list):
+def reverse_segment_if_2better(tour, i, j, points):
     """Чекаем, если уменьшится длина"""
     #[...A-B...C-D...]
     A, B, C, D = points[tour[i-1]], points[tour[i]], points[tour[j-1]], points[tour[j % len(tour)]]
@@ -15,18 +15,16 @@ def reverse_segment_if_2better(tour, i, j, points, tabu_list):
     if delta >= 0:    
         return 0
 
-    if (i, j) in tabu_list or (j, i) in tabu_list:
-        return 0
     tour[i:j] = reversed(tour[i:j])
     return delta
 
 
-def two_opt(tour, points, tabu_list):
+def two_opt(tour, points):
     """Перебираем все пары и запускаем функцию выше"""
     while True:
         delta = 0
         for (a, b) in all_2segments(len(tour)):
-            delta += reverse_segment_if_2better(tour, a, b, points, tabu_list)
+            delta += reverse_segment_if_2better(tour, a, b, points)
         if delta >= 0:
             break 
     return tour
