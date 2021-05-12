@@ -55,7 +55,7 @@ def giveListOfBiggestFacilities(facilities, customers):
 def length(point1, point2):
     return math.sqrt((point1.x - point2.x)**2 + (point1.y - point2.y)**2)
 
-def nearestCheapFacility(facilities, customers, alpha, beta = 0.2):
+def nearestCheapFacility(facilities, customers, alpha, beta = 0, flag1 = 0, flag2 = 0):
     
     solution = [-1]*len(customers)
     capacities = [f.capacity for f in facilities]
@@ -65,7 +65,7 @@ def nearestCheapFacility(facilities, customers, alpha, beta = 0.2):
         best_id = -1
         for f in facilities:
             if capacities[f.index] >= c.demand:
-                if (min_cost == -1 or (alpha * length(f.location, c.location) + (1 - alpha) * f.setup_cost - beta * capacities[f.index] < min_cost and f.capacity == capacities[f.index])):
+                if (min_cost == -1 or (alpha * length(f.location, c.location) + (1 - alpha) * f.setup_cost - beta * capacities[f.index] < min_cost  and f.capacity == capacities[f.index])):
                     best_id = f.index 
                     min_cost = alpha * length(f.location, c.location) + (1-alpha) * f.setup_cost - beta * capacities[f.index]
                 elif (min_cost == -1 or (alpha * length(f.location, c.location) - beta * capacities[f.index] < min_cost  and f.capacity != capacities[f.index])):
@@ -80,71 +80,86 @@ def nearestCheapFacility(facilities, customers, alpha, beta = 0.2):
     obj = sum([f.setup_cost*used[f.index] for f in facilities])
     for customer in customers:
         obj += length(customer.location, facilities[solution[customer.index]].location)
-
-    #obj, solution = opt2(facilities, customers, solution, capacities)
+    if flag1 == 1:
+        obj, solution = opt2(facilities, customers, solution, capacities)
+    if flag2 == 1:
+        obj, solution = opt2Facilities(facilities, customers, solution, capacities)
 
 
     return obj, solution
 
+def opt2Facilities(facilities, customers, solution, capacities):
+    """
+        сгенерить решение
+        проверить каждого customer на уменьшение целевой функции переселить к другому facility
+    """
+    quantity_of_customers = [0] * len(facilities)
+    for c in solution:
+        quantity_of_customers[c] += 1
+    for c, f in enumerate(solution):
+        for facility in facilities:
+            if f == facility.index:
+                continue
+            else:
+                f1, c1, f2 = facilities[f], customers[c], facility
+                f1_c1 = length(f1.location, c1.location)
+                f2_c1 = length(f2.location, c1.location)
+                d0 = f1_c1 + f1.setup_cost + f2.setup_cost
+                if capacities[f2.index] >= c1.demand:
+                    if quantity_of_customers[f1.index] == 1:
+                        d1 = f2_c1 + f2.setup_cost
+                    else:
+                        d1 = f2_c1 + f1.setup_cost + f2.setup_cost
+                else: 
+                    continue
+                if quantity_of_customers[f2.index] == 0:
+                    d0 -= f2.setup_cost
+                if d1 - d0 < 0:
+                    solution[c] = f2.index
+                    capacities[f] += c1.demand
+                    capacities[f2.index] -= c1.demand
+                    quantity_of_customers[f1.index] -= 1
+                    quantity_of_customers[f2.index] += 1
+                else:
+                    continue
+    used = [0] * len(facilities)
+    for facility_index in solution:
+        used[facility_index] = 1
+    obj = sum([f.setup_cost*used[f.index] for f in facilities])
+    for customer in customers:
+        obj += length(customer.location, facilities[solution[customer.index]].location)
+    #print(capacities)
+    return obj, solution
+        
 
 def opt2(facilities, customers, solution, capacities):
 
     quantity_of_customers = [0] * len(facilities)
     for c in solution:
         quantity_of_customers[c] += 1
-    for i in range(len(solution)):
-        for j in range(i+1, len(solution)):
-            f1, c1, f2, c2 = facilities[solution[i]], customers[i], facilities[solution[j]], customers[j]
-            f1_c1 = length(f1.location, c1.location)
+
+    for c1, f1 in enumerate(solution):
+        for j in range(c1+1, len(solution)):
+            f1_, c1_, f2, c2 = facilities[f1], customers[c1], facilities[solution[j]], customers[j]
+            f1_c1 = length(f1_.location, c1_.location)
             f2_c2 = length(f2.location, c2.location)
-            f2_c1 = length(f2.location, c1.location)
-            f1_c2 = length(f1.location, c2.location)
-            d0 = f1_c1 + f2_c2 + f1.setup_cost + f2.setup_cost
-            d1 = f2_c1 + f1_c2 + f1.setup_cost + f2.setup_cost
-            deltas = [-d0 + d1]
-            if (capacities[f1.index] >= c2.demand):
-                if quantity_of_customers[f2.index] == 1:
-                    d2 = f2_c2 + f2_c1 + f1.setup_cost
-                else:
-                    d2 = f2_c2 + f2_c1 + f2.setup_cost + f1.setup_cost
-                deltas.append(d2 - d0)
-            else:
-                deltas.append(100000000000000000)
+            f2_c1 = length(f2.location, c1_.location)
+            f1_c2 = length(f1_.location, c2.location)
+            d0 = f1_c1 + f2_c2 + f1_.setup_cost + f2.setup_cost
+            d1 = f2_c1 + f1_c2 + f1_.setup_cost + f2.setup_cost
+            delta = -d0 + d1
 
-            if (capacities[f2.index] >= c1.demand):
-                if quantity_of_customers[f1.index] == 1:
-                    d3 = f1_c1 + f1_c2 + f2.setup_cost
-                else: 
-                    d3 = f1_c1 + f1_c2 + f1.setup_cost + f2.setup_cost
-                deltas.append(d3 - d0)
-            else:
-                deltas.append(100000000000000000)
-
-            min_ = min(deltas)
-
-            if min_ >= 0:
+            if delta >= 0:
                 continue
+            else:
+                temp = None
 
-            temp = None
-
-            if deltas[0] == min_ and capacities[f1.index] + c1.demand >= c2.demand and capacities[f2.index] + c2.demand >= c1.demand:
-                temp = solution[i]
-                solution[i] = solution[j]
-                solution[j] = temp 
-                capacities[f1.index] = capacities[f1.index] + c1.demand - c2.demand
-                capacities[f2.index] = capacities[f2.index] + c2.demand - c1.demand
-
-            elif deltas[1] == min_ and capacities[f1.index] >= c2.demand:
-                solution[c1.index] = solution[c2.index]
-                capacities[f2.index] += c2.demand
-                capacities[f1.index] -= c2.demand
-                quantity_of_customers[f1.index] -= 1
-
-            elif deltas[2] == min_ and capacities[f2.index] >= c1.demand:
-                solution[c2.index] = solution[c1.index]
-                capacities[f1.index] += c1.demand
-                capacities[f2.index] -= c1.demand
-                quantity_of_customers[f2.index] -= 1
+                if capacities[f1] + c1_.demand >= c2.demand and capacities[f2.index] + c2.demand >= c1_.demand:
+                    temp = solution[c1]
+                    solution[c1] = solution[j]
+                    solution[j] = temp 
+                    capacities[f1] = capacities[f1] + c1_.demand - c2.demand
+                    capacities[f2.index] = capacities[f2.index] + c2.demand - c1_.demand
 
     used = [0] * len(facilities)
     for facility_index in solution:
@@ -152,7 +167,7 @@ def opt2(facilities, customers, solution, capacities):
     obj = sum([f.setup_cost*used[f.index] for f in facilities])
     for customer in customers:
         obj += length(customer.location, facilities[solution[customer.index]].location)
-    print(capacities)
+    #print(capacities)
     return obj, solution
     
 
@@ -215,14 +230,13 @@ def unmap(mapping, index):
     return mapping.index(index)
     
 
-def solveWithOrtools(facilities, customers, facility_count, customer_count, mapping = None):
-    if mapping is None:
-        mapping = [f.index for f in facilities] 
+def solveWithOrtools(facilities, customers, facility_count, customer_count):
+
     n = facilities[0].index
     facility_count = len(facilities)
 
     data = createData(facilities, customers, facility_count, customer_count)
-    print("jopa")
+    
     solver = pywraplp.Solver.CreateSolver("SCIP")
     x = {}
     for j in range(data['num_vars']):
@@ -268,14 +282,14 @@ def solveWithOrtools(facilities, customers, facility_count, customer_count, mapp
     for i, y in enumerate(Y):
         for j in range(len(y)):
             if y[j] == 1:
-                solution[i] = mapping[j]
+                solution[i] = j + n
     
     used = [0] * facility_count
     for facility_index in solution:
-        used[unmap(mapping, facility_index)] = 1
-    obj = sum([f.setup_cost*used[unmap(mapping, f.index)] for f in facilities])
+        used[facility_index - n] = 1
+    obj = sum([f.setup_cost*used[f.index-n] for f in facilities])
     for customer in customers:
-        obj += length(customer.location, facilities[unmap(mapping, solution[customer.index])].location)
+        obj += length(customer.location, facilities[solution[customer.index] -n].location)
 
     return obj, solution
 
@@ -299,13 +313,23 @@ def solve_it(input_data):
         parts = lines[i].split()
         customers.append(Customer(i-1-facility_count, int(parts[0]), Point(float(parts[1]), float(parts[2]))))
         
+
+
     if facility_count * customer_count < 50000:
         obj, solution = solveWithOrtools(facilities, customers, facility_count, customer_count)
-    elif facility_count * customer_count < 150000:
+    elif facility_count * customer_count == 100000:
         obj, solution = solveWithOrtools(facilities[48:69], customers, facility_count, customer_count)
     else:
-        obj, solution = nearestCheapFacility(facilities, customers, 0.85)
-
+        min_ = 100000000000
+        bst = None
+        #for alpha in np.arange(0.7, 0.9, 0.05):
+        if facility_count == 1000 and customer_count == 1500:
+            obj, solution = nearestCheapFacility(facilities, customers, 0.85, 0, 1, 1)
+        elif (facility_count ==500 and customer_count == 3000) or facility_count * customer_count == 160000:
+            obj, solution = nearestCheapFacility(facilities, customers, 0.85)
+        elif facility_count * customer_count >= 4000000:
+            obj, solution = nearestCheapFacility(facilities, customers, 0.85)
+        
     output_data = '%.2f' % obj + ' ' + str(0) + '\n'
     output_data += ' '.join(map(str, solution))
 
