@@ -1,5 +1,5 @@
-## Coursera "Discrete Optimization"
-# Results:
+# Coursera "Discrete Optimization"
+## Results:
 Knapsack - 60/60, method: DP + density heuristic
 
 Graph Coloring - 47/60, method: CP
