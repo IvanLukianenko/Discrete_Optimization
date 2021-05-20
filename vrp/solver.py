@@ -31,26 +31,37 @@ def length(customer1, customer2):
     return math.sqrt((customer1.x - customer2.x)**2 + (customer1.y - customer2.y)**2)
 
 def tspOnSteroids(tour, customers, vehicle_count):
+    """
+        Решение с помощью идеи TSP on steroids.
+    """
     depot = customers[0]
-    #print("Количество грузовиков: ", vehicle_count)
-    #for _ in range(vehicle_count-1):
-    #    customers.append(depot)
+    for _ in range(vehicle_count-1):
+        customers.append(depot)
     tour = opt2.two_opt(tour, customers)
 
     return tour
     
 
 def findLZI(tour):
+    """
+        Найти индекс последнего нуля.
+    """
     for i in range(len(tour)-1, 0, -1):
         if tour[i].index == 0:
             return i
 
 def findFZI(tour):
+    """
+        Найти индекс первого нуля.
+    """
     for i in range(0, len(tour)):
         if tour[i].index == 0:
             return i   
 
 def trivalSolution(vehicle_count, vehicle_capacity, depot, customers, customer_count):
+    """
+        Пробное решение.
+    """
     vehicle_tours = []
     customer_count = len(customers)
     remaining_customers = set(customers)
@@ -74,6 +85,9 @@ def trivalSolution(vehicle_count, vehicle_capacity, depot, customers, customer_c
     return vehicle_tours
 
 def calculateObj(vehicle_count, vehicle_tours, depot):
+    """
+        Подсчет objective function.
+    """
     obj = 0
     for v in range(0, vehicle_count):
         vehicle_tour = vehicle_tours[v]
@@ -85,6 +99,9 @@ def calculateObj(vehicle_count, vehicle_tours, depot):
     return obj
 
 def fromTourToVehicleTours(tour, vehicle_count, n):
+    """
+        Парсинг решения в виде одного тура в пути грузовиков.
+    """
     vehicle_tours = [[] for i in range(vehicle_count)]
     
     if tour[0] == 0:
@@ -109,12 +126,18 @@ def fromTourToVehicleTours(tour, vehicle_count, n):
         return vehicle_tours
 
 def printTour(tour):
+    """
+        Печать тура.
+    """
     string = ""
     for t in tour:
         string = string + " " + str(t.index)
     print(string)
 
 def sumDemand(vehicle_tours):
+    """
+        Подсчет потребностей.
+    """
     total_demands = []
     for tour in vehicle_tours:
         tot = 0
@@ -126,6 +149,9 @@ def sumDemand(vehicle_tours):
 
 
 def rotateCustomers(vehicle_tours, vehicle_capacity):
+    """
+        Подвинуть клиентов.
+    """
     total_demands = sumDemand(vehicle_tours)
     for i in range(len(vehicle_tours)):
         actual_demand = 0
@@ -139,12 +165,18 @@ def rotateCustomers(vehicle_tours, vehicle_capacity):
     return vehicle_tours
 
 def findNearestDemand(tour, delta):
+    """
+        Найти наименьший элемент, который стоит убрать, чтобы выполнить ограничение.
+    """
     demand = [x.demand - delta for x in tour]
     return demand.index(min(demand))
 
 
 
 def exchangeCustomers(vehicle_tours, vehicle_capacity, customers):
+    """
+        Поменять клиентов, для улучшения решения.
+    """
     total_demands = sumDemand(vehicle_tours)
     deltas = [vehicle_capacity - total_demand for total_demand in total_demands]
     for i in range(len(vehicle_tours)):
@@ -160,6 +192,9 @@ def exchangeCustomers(vehicle_tours, vehicle_capacity, customers):
     return vehicle_tours
 
 def createDistanceTable(points):
+    """
+        Создание матрицы расстояний.
+    """
     a = [[0] * (len(points)) for i in range(len(points))]
     a = np.array(a)
     for i in range(len(points)):
@@ -168,7 +203,9 @@ def createDistanceTable(points):
     return a
 
 def create_data_model(vehicle_count, vehicle_capacity, customers):
-    """Stores the data for the problem."""
+    """
+        Создание данных для модели.
+    """
     data = {}
     data['distance_matrix'] = createDistanceTable(customers)
     data['num_vehicles'] = vehicle_count
@@ -177,114 +214,104 @@ def create_data_model(vehicle_count, vehicle_capacity, customers):
     data['vehicle_capacities'] = [vehicle_capacity] * vehicle_count
     return data
 
-def print_solution(data, manager, routing, solution):
-    """Prints solution on console."""
-    print(f'Objective: {solution.ObjectiveValue()}')
+def collect_solution(data, manager, routing, solution):
+    """
+        Сборка решения.
+    """
     total_distance = 0
     total_load = 0
     vehicle_tours = []
     for vehicle_id in range(data['num_vehicles']):
         vehicle_tours.append([])
         index = routing.Start(vehicle_id)
-        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
         route_distance = 0
         route_load = 0
         while not routing.IsEnd(index):
             node_index = manager.IndexToNode(index)
             route_load += data['demands'][node_index]
-            plan_output += ' {0} Load({1}) -> '.format(node_index, route_load)
             vehicle_tours[-1].append(node_index)
             previous_index = index
             index = solution.Value(routing.NextVar(index))
             route_distance += routing.GetArcCostForVehicle(
                 previous_index, index, vehicle_id)
-        plan_output += ' {0} Load({1})\n'.format(manager.IndexToNode(index),
-                                                 route_load)
-        plan_output += 'Distance of the route: {}m\n'.format(route_distance)
-        plan_output += 'Load of the route: {}\n'.format(route_load)
-        print(plan_output)
+        
         total_distance += route_distance
         total_load += route_load
-    print('Total distance of all routes: {}m'.format(total_distance))
-    print('Total load of all routes: {}'.format(total_load))
     return vehicle_tours
 
 def solveOrTools(vehicle_count, vehicle_capacity, customers):
-    """Entry point of the program."""
-    # Instantiate the data problem.
+    """
+        Решение с помощью ortools модели.
+    """
+
     data = create_data_model(vehicle_count, vehicle_capacity, customers)
 
-    # Create the routing index manager.
     manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
                                            data['num_vehicles'], data['depot'])
 
-    # Create Routing Model.
     routing = pywrapcp.RoutingModel(manager)
 
 
-    # Create and register a transit callback.
     def distance_callback(from_index, to_index):
-        """Returns the distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
+        """
+            Возвращает расстояние между клиентами.
+        """
         from_node = manager.IndexToNode(from_index)
         to_node = manager.IndexToNode(to_index)
         return data['distance_matrix'][from_node][to_node]
 
     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
 
-    # Define cost of each arc.
     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
 
     def demand_callback(from_index):
-        """Returns the demand of the node."""
-        # Convert from routing variable Index to demands NodeIndex.
+        """
+            Возвращает потребность клиента.
+        """
         from_node = manager.IndexToNode(from_index)
         return data['demands'][from_node]
 
     demand_callback_index = routing.RegisterUnaryTransitCallback(demand_callback)
     routing.AddDimensionWithVehicleCapacity(
         demand_callback_index,
-        0,  # null capacity slack
-        data['vehicle_capacities'],  # vehicle maximum capacities
-        True,  # start cumul to zero
+        0,  
+        data['vehicle_capacities'],  
+        True, 
         'Capacity')
 
-    # Add Distance constraint.
     dimension_name = 'Distance'
     routing.AddDimension(
         transit_callback_index,
-        0,  # no slack
-        3000,  # vehicle maximum travel distance
-        True,  # start cumul to zero
+        0,  
+        3000, 
+        True, 
         dimension_name)
     distance_dimension = routing.GetDimensionOrDie(dimension_name)
     distance_dimension.SetGlobalSpanCostCoefficient(100)
 
-    # Setting first solution heuristic.
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
 
-    # Solve the problem.
     solution = routing.SolveWithParameters(search_parameters)
 
-    # Print solution on console.
     if solution:
-        vehicle_tours = print_solution(data, manager, routing, solution)
+        vehicle_tours = collect_solution(data, manager, routing, solution)
     else:
         print('No solution found !')
     return vehicle_tours
 
-def solveLikeTspOnSteroids():
+def solveLikeTspOnSteroids(vehicle_count, vehicle_capacity, depot, customer_count, customers):
+    """
+        Решение как tsp on steroids.
+    """
     customers_copy = customers.copy()
-    # build a trivial solution
-    # assign customers to vehicles starting by the largest customer demands
+
     vehicle_tours = trivalSolution(vehicle_count, vehicle_capacity, depot, customers_copy, customer_count)
 
     tourForTsp = []
     tourForTsp += vehicle_tours[0]
     for i in range(1, vehicle_count):
-        #tourForTsp += [customers[0]]
         tourForTsp += vehicle_tours[i]
     tour = tourForTsp
     k = vehicle_count
@@ -317,14 +344,11 @@ def solveLikeTspOnSteroids():
         if len(tour) != 0 and k == 0:
             vehicle_tours_main[-1] += tour
 
-        #customer_count -= len(vehicle_tours_main[-1]) +1
     
     vehicle_tours = vehicle_tours_main
 
 def solve_it(input_data):
-    # Modify this code to run your optimization algorithm
 
-    # parse the input
     lines = input_data.split('\n')
 
     parts = lines[0].split()
@@ -338,23 +362,20 @@ def solve_it(input_data):
         parts = line.split()
         customers.append(Customer(i-1, int(parts[0]), float(parts[1]), float(parts[2])))
 
-    #the depot is always the first customer in the input
+    
     depot = customers[0] 
     vehicle_tours = solveOrTools(vehicle_count, vehicle_capacity, customers)
-    print("Принчу туры")
+    
     for i in range(len(vehicle_tours)):
         vehicle_tours[i] = vehicle_tours[i][1:]
-        print(" ".join(map(str, vehicle_tours[i])))
-    print("Закончил принтить туры")
-    # checks that the number of customers served is correct
     assert sum([len(v) for v in vehicle_tours]) == len(customers) - 1
     for i in range(len(vehicle_tours)):
         for j in range(len(vehicle_tours[i])):
             vehicle_tours[i][j] = customers[vehicle_tours[i][j]]
-    # calculate the cost of the solution; for each vehicle the length of the route
+    
     obj = calculateObj(vehicle_count, vehicle_tours, depot)
     
-    # prepare the solution in the specified output format
+    
     outputData = '%.2f' % obj + ' ' + str(0) + '\n'
     for v in range(0, vehicle_count):
         outputData += str(depot.index) + ' ' + ' '.join([str(customer.index) for customer in vehicle_tours[v]]) + ' ' + str(depot.index) + '\n'
