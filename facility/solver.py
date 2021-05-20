@@ -20,7 +20,9 @@
 #
 #       План действий:
 #                   1. Составляем матрицу расстояний.       Done!
-#                   2. Подготовить данные для MIP модели.      
+#                   2. Подготовить данные для MIP модели.   Done!
+#                   3. Локальный поиск для 5-8 тестов.      Done!
+#    
 #-----------------------------------------------------------------------------------------------------------------------------------#
 from collections import namedtuple
 import math
@@ -34,12 +36,18 @@ Customer = namedtuple("Customer", ['index', 'demand', 'location'])
 
 
 def countSumDemand(customers):
+    """
+        Посчитать суммарную потребность массива кустомеров.
+    """
     res = 0
     for c in customers:
         res += c.demand
     return res
 
 def giveListOfBiggestFacilities(facilities, customers):
+    """
+        Посчитать сколько требуется складов из facilities, чтобы обслужить массив customers
+    """
     total_demand = countSumDemand(customers)
     sortFacs = sorted(facilities, key = lambda x: x.capacity, reverse=True)
     listToGive = []
@@ -51,12 +59,16 @@ def giveListOfBiggestFacilities(facilities, customers):
     return listToGive
 
 
-
 def length(point1, point2):
+    """
+        Вычисление евклидового расстояния между точками.
+    """
     return math.sqrt((point1.x - point2.x)**2 + (point1.y - point2.y)**2)
 
 def nearestCheapFacility(facilities, customers, alpha, beta = 0, flag1 = 0, flag2 = 0):
-    
+    """
+        Клиента прикрепляем к ближайшему складу, учитывая его открытие и его вместимость
+    """
     solution = [-1]*len(customers)
     capacities = [f.capacity for f in facilities]
     
@@ -133,7 +145,9 @@ def opt2Facilities(facilities, customers, solution, capacities):
         
 
 def opt2(facilities, customers, solution, capacities):
-
+    """
+        Сгенерив решение, проверить улучшиться ли objective function, если поменять склады у клиентов.
+    """
     quantity_of_customers = [0] * len(facilities)
     for c in solution:
         quantity_of_customers[c] += 1
@@ -172,6 +186,10 @@ def opt2(facilities, customers, solution, capacities):
     
 
 def createData(facilities, customers, facility_count, customer_count):
+    """
+        Обработка данных для MIP модели.
+    """
+
     data = {}
 
     #Сначала разбираемся с objective function
@@ -227,11 +245,16 @@ def createData(facilities, customers, facility_count, customer_count):
 
 
 def unmap(mapping, index):
+    """
+        Обратное отображение.
+    """
     return mapping.index(index)
     
 
 def solveWithOrtools(facilities, customers, facility_count, customer_count):
-
+    """
+        Решение с помощью ortools MIP model.
+    """
     n = facilities[0].index
     facility_count = len(facilities)
 
