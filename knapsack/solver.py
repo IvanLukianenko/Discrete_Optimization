@@ -6,10 +6,11 @@ Item = namedtuple("Item", ['index', 'value', 'weight'])
 Item_2 = namedtuple("Item", ['index', 'value', 'weight', 'value_on_weight'])
 global_max = -1
 
-def LS(o_v, f_s, actl_v, tkn):
+def BranchAndBound(o_v, f_s, actl_v, tkn):
+    """
+        Метод ветвей и границ для рюкзака.
+    """
     global global_max
-    #print("обработал вершину " + str(len(tkn)))
-    #print(o_v, global_max)
     if (f_s < 0):
         return -1, []
     if (len(tkn) == n) and (actl_v < global_max):
@@ -21,8 +22,8 @@ def LS(o_v, f_s, actl_v, tkn):
         return -1, tkn
     if (o_v < 0):
         return -1, tkn
-    a, b = LS(o_v, f_s - items_2_sorted[len(tkn)].weight, actl_v + items_2_sorted[len(tkn)].value, tkn + [items_2_sorted[len(tkn)].index])
-    a1, b1 = LS(o_v - items_2_sorted[len(tkn)].value, f_s, actl_v, tkn + [items_2_sorted[len(tkn)].index])
+    a, b = BranchAndBound(o_v, f_s - items_2_sorted[len(tkn)].weight, actl_v + items_2_sorted[len(tkn)].value, tkn + [items_2_sorted[len(tkn)].index])
+    a1, b1 = BranchAndBound(o_v - items_2_sorted[len(tkn)].value, f_s, actl_v, tkn + [items_2_sorted[len(tkn)].index])
 
     if a > a1:
         global_max, tkn = a, b
@@ -31,6 +32,9 @@ def LS(o_v, f_s, actl_v, tkn):
     return global_max, tkn
 
 def Traceback(arr, K, items_):
+    """
+        По матрице вычислим решение.
+    """
     items = []
     j = len(items_)
     i = K
@@ -47,6 +51,9 @@ def Traceback(arr, K, items_):
     return items
 
 def create_table(items, K):
+    """
+        Создаем "ту самую матрицу" для динамического программирования рюкзака.
+    """
     a = [[0] * (len(items)+1) for i in range(K+1)]
     #print (w)
     for i in range(K+1):
@@ -62,6 +69,9 @@ def create_table(items, K):
 
 
 def greedy_algo(items_2, K):
+    """
+        Жадный алгоритм.
+    """
     actual_weight = 0
     actual_value = 0
     taken = []
@@ -77,14 +87,8 @@ def greedy_algo(items_2, K):
     return taken, actual_value - items_2[i-1].value
     
 
-
-
-
-
 def solve_it(input_data):
-    # Modify this code to run your optimization algorithm
 
-    # parse the input
     lines = input_data.split('\n')
 
     firstLine = lines[0].split()
@@ -98,44 +102,12 @@ def solve_it(input_data):
         parts = line.split()
         items.append(Item(i-1, int(parts[0]), int(parts[1])))
         items_2.append(Item_2(i-1, int(parts[0]), int(parts[1]), (float(parts[0])/int(parts[1])) ) ) 
-
-
-    # a trivial algorithm for filling the knapsack
-    # it takes items in-order until the knapsack is full
     
-    value = 0
-    weight = 0
     taken = [0]*len(items)
 
-    global v 
-    v = [item.value for item in items]
-    global w 
-    w = [item.weight for item in items]
     K = capacity
-    global v_w
-    v_w = [item.value_on_weight for item in items_2]
-    #global n
-    #n = item_count
-    o_v = 0.0
-    global items_2_sorted
-    items_2_sorted = sorted(items_2, key = lambda item: item.value_on_weight, reverse = True)  
-    res_weight = 0
-    items_sor = sorted(items_2, key = lambda item : item.value_on_weight, reverse = True)
-    '''for item in items_sor:
-        o_v += item.value
-        res_weight += item.weight
-        if res_weight > K:
-            index_val = item.index
-            o_v = o_v - item.value
-            res_weight -= item.weight
-            o_v = o_v + float((K - res_weight) * item.value_on_weight)
-            #print(item.value_on_weight)
-            break'''
-    #print(o_v)
-    o_v = sum (v)
-    #value, taken = LS(o_v, K, 0, [])
-
-    #print(w)
+    items_2_sorted = sorted(items_2, key = lambda item: item.value_on_weight, reverse = True) 
+    
     if item_count == 400:
         n = 30
         table = create_table(items_2_sorted[:n],K)
@@ -157,12 +129,7 @@ def solve_it(input_data):
             taken_1 = Traceback(table, K, items_2_sorted)
             for i in taken_1:
                 taken[i] = 1
-    #print(table)
-    #for item in items:
-    #    if weight + item.weight <= capacity:
-    #        taken[item.index] = 1
-    #        value += item.value
-    #        weight += item.weight
+    
     
     # prepare the solution in the specified output format
     output_data = str(value) + ' ' + str(0) + '\n'
@@ -179,4 +146,3 @@ if __name__ == '__main__':
         print(solve_it(input_data))
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/ks_4_0)')
-
