@@ -1,25 +1,27 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
-""" Variables:
-    color[node_count] - decision variable
-
-    Constraints:
-
-    (General constraint) 
-    1) for edge in edges:
-        color[edge[0]] != color[edge[1]]
-
-    (Symmetry breakings constraint)
-    2) for node1 in nodes:
-        for node2 in nodes:
-            if node1 < node2:
-                color[node1] < color[node2]
-"""
-
+#---------------------------------------------------------------------------------------------------------------------#
+#   Variables:
+#       color[node_count] - decision variable
+#
+#   Constraints:
+#           (General constraint) 
+#           1) for edge in edges:
+#               color[edge[0]] != color[edge[1]]
+#
+#           (Symmetry breakings constraint)
+#           2) for node1 in nodes:
+#           for node2 in nodes:
+#               if node1 < node2:
+#                   color[node1] < color[node2]
+#
+#----------------------------------------------------------------------------------------------------------------------#
 from ortools.sat.python import cp_model
 
 def find_max_deg(edges, node_count):
+    """
+        Вычислим максимальную степень в графе.
+    """
     max_deg = 0
 
     for i in range(0, node_count):
@@ -29,26 +31,11 @@ def find_max_deg(edges, node_count):
                 k += 1
             if max_deg < k:
                 max_deg = k
-                #print(i)
     
     return max_deg
 
-def print_solution(solver, color):
-    count = 0
-
-    while solver.NextSolution():
-        count += 1
-        if count == 1:
-            for c in color:
-                solution.append(c.Value())
-        
-    #print("\nNumber of solutions found:", count)
-
-
 def solve_it(input_data):
-    # Modify this code to run your optimization algorithm
 
-    # parse the input
     lines = input_data.split('\n')
 
     first_line = lines[0].split()
@@ -61,7 +48,7 @@ def solve_it(input_data):
         parts = line.split()
         edges.append((int(parts[0]), int(parts[1])))
     
-    #finding max deg, that will be the minimum of possible number of colors
+    #max deg is the minimum of possible number of colors
     max_deg = find_max_deg(edges, node_count)
     
     i = 0
@@ -86,13 +73,9 @@ def solve_it(input_data):
     if status == cp_model.OPTIMAL:
         for c in color:
             solution.append(solver.Value(c))
-    #print (max_deg)
-    count = len(set(solution))
-    # build a trivial solution
-    # every node has its own color
-    
 
-    # prepare the solution in the specified output format
+    count = len(set(solution))
+    
     output_data = str(count) + ' ' + str(0) + '\n'
     output_data += ' '.join(map(str, solution))
 
